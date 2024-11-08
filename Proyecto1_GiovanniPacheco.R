@@ -118,7 +118,21 @@ reglas_apriori <- apriori(nuevo_data_ganado, parameter = list(support=0.2, confi
 #Se identificaron 22 reglas, por lo que se inspeccionan.
 inspect(reglas_apriori[0:22])
 
+##Reglas de asociación FP-Growth
+# Instalar Rtool, verificar la versión de Rstudio para instalar la versión correcta. Lo puede descargar en el siguiente enlace:https://cran.r-project.org/bin/windows/Rtools/
+#Una vez se ha instalado la versión de Rtools, verificar que esté insatalado en ruta de Rstudio
+system("where make")
 
-data_ganado <- bind_rows(data_2022_limpio, data_2023_limpio)
+#A continuación se aplica el algoritmo sobre el set de variables discretas generado
+reglas_fp_growth <- fim4r(nuevo_data_ganado, method = "fpgrowth", target = "rules", supp = 0.2, conf = 0.5)
 
-View(data_ganado)
+#Para visualizar las reglas como un frame, se aplica el siguiente código
+reglasframe <- as(reglas_fp_growth, "data.frame")
+View(reglasframe)
+
+#Se cambió el soporte a 0.1 para verificar si aparecen otro tipo de asociaciones que señales ubicación o tiempo (mes)
+reglas_fp_growth <- fim4r(nuevo_data_ganado, method = "fpgrowth", target = "rules", supp = 0.1, conf = 0.5)
+
+#Para visualizar las reglas como un frame, se aplica el siguiente código
+reglasframe <- as(reglas_fp_growth, "data.frame")
+View(reglasframe)
