@@ -58,21 +58,66 @@ anyNA(data_2023)
 sum(is.na(data_2022))
 sum(is.na(data_2023))
 
-#Se identificó que los valores nulos corresponden a la columna "Peso total en libras". Para no tener problemas posteriormente se eliminan esas observaciones.
-data_2022_limpio <- na.omit(data_2022)
-data_2023_limpio <- na.omit(data_2023)
+#Se identificó que los valores nulos corresponden a la columna "Peso total en libras". Sin embargo, estos valores corresponden al dato del tipo de carne de exportación, que no contiene información en esta variable, por lo que únicamente se llenarán los vacíos con ceros.
+data_2022[is.na(data_2022)] <- 0
+data_2023[is.na(data_2023)] <- 0
 
 #A partir de esto, se procede a hacer la union de los dos datasets. Para ello es necesario instalar el paquete dplyr.
 install.packages("dplyr")
 library(dplyr)
 
 #Para no tener problemas con la unión, es necesario que las columnas tengan el mismo nombre en los encabezados. Por lo que a continuación se procede a modificarlos.
-View(data_2022_limpio)
-View(data_2023_limpio)
+View(data_2022)
+View(data_2023)
 
-colnames(data_2022_limpio)[colnames(data_2022_limpio) == "Número de cabezas"] <- "Número de Cabezas"
-colnames(data_2022_limpio)[colnames(data_2022_limpio) == "Peso vivo promedio (peso de cada cabeza)"] <- "Peso vivo promedio (Peso de cada cabeza)"
-colnames(data_2022_limpio)[colnames(data_2022_limpio) == "Carne y hueso"] <- "Carne y Hueso"
+colnames(data_2022)[colnames(data_2022) == "Número de cabezas"] <- "Número de Cabezas"
+colnames(data_2022)[colnames(data_2022) == "Peso vivo promedio (peso de cada cabeza)"] <- "Peso vivo promedio (Peso de cada cabeza)"
+colnames(data_2022)[colnames(data_2022) == "Carne y hueso"] <- "Carne y Hueso"
+
+#A continuación se unen las tablas combinando las filas y se asigna la combinación a una nueva variable.
+data_ganado <- bind_rows(data_2022, data_2023)
+
+View(data_ganado)
+
+###Aplicación de Minería de datos:
+##Reglas de asociación Apriori
+
+#A partir del set de datos transformado, se aplicará la reglas de asociación apriori solo aquellas columnas con datos categóricos o nominales. Por lo que se creará un set de datos a partir del transformado.
+
+nuevo_data_ganado <- data_ganado[, c('Año','Tipo de Carne', 'Mes', 'Departamento', 'Municipio', 'Clase', 'Sexo (subclase)')]
+
+#Verificar el nuevo set de datos creado solo con las columnas con variables categoricas o discretas
+View(nuevo_data_ganado)
+
+#En el set de datos se identificaron variables en la columna "Municipio" con valores decimales, por lo que tanto en el dataset fuente como en el de "nuevo_data_ganado" se reduciran a numeros enteros.
+data_ganado$Municipio <- round(data_ganado$Municipio)
+nuevo_data_ganado$Municipio <- round(nuevo_data_ganado$Municipio)
+
+#Verificar el set editado
+View(nuevo_data_ganado)
+
+#A continuacion, se aplican las reglas de asociacion al set creado
+reglas_apriori <- apriori(nuevo_data_ganado, parameter = list(support=0.2, confidence=0.5))
+
+#Inspeccionar las reglas
+inspect(reglas_apriori[0:100])
+
+
+#Al aplicar las reglas, salen advertencias de que no hay valores logicos de factor. Por lo que se explora la estructura de dataset creado
+str(nuevo_data_ganado)
+
+#Se identifica que las categorías están identificadas como números y no como factores. Por lo que se procede a transformar los datos a factores.
+nuevo_data_ganado[,1:7] <- lapply(nuevo_data_ganado[,1:7], as.factor)
+
+#Se verifica el dataset
+View(nuevo_data_ganado)
+
+#Con la base limpia, se aplican ahora el algoritmo apriori nuevamente.
+reglas_apriori <- apriori(nuevo_data_ganado, parameter = list(support=0.2, confidence=0.5))
+
+#Se identificaron 22 reglas, por lo que se inspeccionan.
+inspect(reglas_apriori[0:22])
+
 
 data_ganado <- bind_rows(data_2022_limpio, data_2023_limpio)
 
