@@ -136,3 +136,75 @@ reglas_fp_growth <- fim4r(nuevo_data_ganado, method = "fpgrowth", target = "rule
 #Para visualizar las reglas como un frame, se aplica el siguiente código
 reglasframe <- as(reglas_fp_growth, "data.frame")
 View(reglasframe)
+
+##Análisis de cluster
+#Para este análisis se utilizará el set de datos que contienen tanto valores discretos como continuos
+View(data_ganado)
+
+#Se realizará una comparación entre años por lo que se creará un subset por año
+data_ganado_2022 <- subset(data_ganado, Año==2022)
+data_ganado_2023 <- subset(data_ganado, Año==2023)
+
+#Verificar que el subset se ha creado correctamente
+View(data_ganado_2022)
+View(data_ganado_2023)
+
+#A continuación se generará los clusters de cada subset
+cluster_data_ganado_2022 <- kmeans(data_ganado_2022, centers=4)
+cluster_data_ganado_2023 <- kmeans(data_ganado_2023, centers=4)
+
+#Para visualizar los clusters es necesarios instalar el paquete de ggplot2, así como la correspondiente librería
+install.packages("ggplot2")
+library(ggplot2)
+
+##A continuación se realizan los gráficos de los cluster tomando en cuenta las variables de "Municipio" y "Peso total en libras"
+
+#Datos 2022
+# Agregar la columna de clúster al data.frame original
+data_ganado_2022$cluster <- as.factor(cluster_data_ganado_2022$cluster)
+
+# Crear el gráfico Departamento vs Producción de cuero
+ggplot(data_ganado_2022, aes(x = Cuero, y = Departamento, color = cluster)) +
+  geom_point() +
+  geom_point(data = as.data.frame(cluster_data_ganado_2022$centers), aes(x = Cuero, y = Departamento), color = "black", size = 4, shape = 17) +
+  labs(title = "2022: Departamento vs Producción de cuero") +
+  theme_minimal()+
+  theme(plot.title = element_text(size = 12, hjust = 0.5))+
+  scale_y_continuous(breaks = seq(1, 22, by = 1),limits = c(1, 22))
+
+#Crear el gráfico Sexo(subclase) vs Peso total en libras
+ggplot(data_ganado_2022, aes(x = `Sexo (subclase)`, y = `Peso total en libras`, color = cluster)) + 
+geom_point() + 
+geom_point(data = as.data.frame(cluster_data_ganado_2022$centers), aes(x = `Sexo (subclase)`, y = `Peso total en libras`), color = "black", size = 4, shape = 17) + 
+labs(title = "2022: Sexo (subclase) vs Peso total en libras") + 
+theme_minimal() + 
+theme(plot.title = element_text(size = 12, hjust = 0.5))+
+scale_x_continuous(breaks = seq(1, 10, by = 1),limits = c(1, 10))+
+scale_y_continuous(breaks = seq(0, 3500000, by = 500000),limits = c(0, 3500000))
+
+#Datos 2023
+# Agregar la columna de clúster al data.frame original
+data_ganado_2023$cluster <- as.factor(cluster_data_ganado_2023$cluster)
+
+# Crear el gráfico Departamento vs Producción de cuero
+ggplot(data_ganado_2023, aes(x = Cuero, y = Departamento, color = cluster)) +
+  geom_point() +
+  geom_point(data = as.data.frame(cluster_data_ganado_2023$centers), aes(x = Cuero, y = Departamento), color = "black", size = 4, shape = 17) +
+  labs(title = "2023: Departamento vs Producción de cuero") +
+  theme_minimal()+
+  theme(plot.title = element_text(size = 12, hjust = 0.5))+
+  scale_y_continuous(breaks = seq(1, 22, by = 1),limits = c(1, 22))
+
+#Crear el gráfico Sexo(subclase) vs Peso total en libras
+ggplot(data_ganado_2023, aes(x = `Sexo (subclase)`, y = `Peso total en libras`, color = cluster)) + 
+geom_point() + 
+geom_point(data = as.data.frame(cluster_data_ganado_2023$centers), aes(x = `Sexo (subclase)`, y = `Peso total en libras`), color = "black", size = 4, shape = 17) + 
+labs(title = "2023: Sexo (subclase) vs Peso total en libras") + 
+theme_minimal() + 
+theme(plot.title = element_text(size = 12, hjust = 0.5))+
+scale_x_continuous(breaks = seq(1, 10, by = 1),limits = c(1, 10))+
+scale_y_continuous(breaks = seq(0, 3500000, by = 500000),limits = c(0, 3500000))
+
+#Crear el gráfico Número de Cabezas vs Clase
+
+
