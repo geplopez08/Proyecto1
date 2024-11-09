@@ -1,0 +1,316 @@
+---
+title: "Instructivo"
+author: "Giovanni Pacheco"
+date: "2024-11-08"
+output: html_document
+---
+
+## Acceso a los datos
+
+Los datos utilizados para el análisis corresponden a información del destace de ganado para consumo interno y externo.Los datos corresponden a los publicados en la página oficial del Instituto Nacional de Estadística (INE). Únicamente cuentan con dos bases de datos correspondientes al año 2023 y 2022. En los años anteriores el INE solo cuenta con las publicaciones de resultados a partir de los datos.
+
+Para acceder a los datos ingrese en el siguiente enlace: https://www.ine.gob.gt/estadisticas-agropecuarias/ y seleccione la opción "Base de datos", el año (para este proyecto 2023 y 2022) y el periodo "Anual".
+
+Únicamente se trabajará con estos años, ya que la fuente no tiene bases de datos de los años previos.
+
+El análisis a realizar se ejecutará en lenguaje R, a través de RStudio. Para descargar este programa ingrese al siguiente enlace:https://posit.co/download/rstudio-desktop/
+
+Instale tanto el lenguaje R, como el programa RStudio. Al instalar los dos elementos, puede seguir los siguientes pasos.
+
+Las instrucciones también se encuentran en el archivo de código seguido del símbolo #, pero en este archivo markdown, la explicación es mucho más detallada.
+
+#Para iniciar el proyecto primero se instalarán las librerías a utilizar.
+```{r}
+install.packages("arules")
+library(arules)
+```
+#Dado que la base de datos vienen en un formato xlsx, el siguiente paso es descargar una libreria que permita la lectura de ese tipo de archivos
+```{r}
+install.packages("readxl")
+library(readxl)
+```
+#El siguiente paso es cargar los datasets. En el elemento después de read_excel, entre comillas, debe de ingresar la ruta en donde se ubican los datasets. De igual forma, en sheet debe de ingresar el nombre de la hoja en donde se ubican los datos
+```{r}
+data_2023 <- read_excel("Ingrese el path en donde se úbica el archivo", sheet = "Basededatosdeganado")
+data_2022 <- read_excel("Ingrese el path en donde se úbica el archivo", sheet = "paso6 baseParaUsuario")
+```
+#El siguiente paso es hacer una exploracion rapida de los data sets. Esto ayudará a reconocer las columnas, la cantidad de observaciones y entender de qué trata la información.
+```{r}
+View(data_2022)
+View(data_2023)
+```
+##Limpieza de datos: 
+A partir de la exploración de datos, vamos a hacer una limpieza de los datos.
+
+#Los dos datasets tienen 19 columnas con los mismos datos. El siguiente paso es unir las dos bases de datos para contar con un solo dataset para el analisis. Para ello es necesario eliminar la columna de correlativo; que corresponde únicamente al número de observación. Se elimina ya que no aporta información relevante y puede dificultar la unión de los datasets.
+```{r}
+data_2022 <- data_2022[, -c(1)]
+data_2023 <- data_2023[,-c(1)]
+```
+#Al cargar los datos, algunas variables muestran las observaciones con números decimales; información que no forma parte de la fuente original. Por lo que es necesario transformar los valores de esas variables a números enteros.
+```{r}
+data_2022$`Peso total en libras`<- round(data_2022$`Peso total en libras`)
+data_2022$`Peso total del número de cabezas (quintales)`<- round(data_2022$`Peso total del número de cabezas (quintales)`)
+data_2022$`Carne y hueso` <- round(data_2022$`Carne y hueso`)
+data_2022$Sebo <- round(data_2022$Sebo)
+data_2022$Total <- round(data_2022$Total)
+data_2022$Vísceras <- round(data_2022$Vísceras)
+data_2022$Cuero <- round(data_2022$Cuero)
+data_2022$Sangre <- round(data_2022$Sangre)
+data_2022$Desperdicio <- round(data_2022$Desperdicio)
+```
+#Se realiza la misma limpieza con los datos de 2023
+```{r}
+data_2023$`Peso total en libras` <- round(data_2023$`Peso total en libras`)
+data_2023$`Peso total del número de cabezas (quintales)`<- round(data_2023$`Peso total del número de cabezas (quintales)`)
+data_2023$`Carne y Hueso`<- round(data_2023$`Carne y Hueso`)
+data_2023$Sebo <- round(data_2023$Sebo)
+data_2023$Total <- round(data_2023$Total)
+data_2023$Vísceras <- round(data_2023$Vísceras)
+data_2023$Cuero <- round(data_2023$Cuero)
+data_2023$Sangre <- round(data_2023$Sangre)
+data_2023$Desperdicio <- round(data_2023$Desperdicio)
+```
+#La variable "Peso vivo promedio (peso de cada cabeza)" muestra sus valores unicamente en dos decimales. Al momento de cargar el dataset de 2022, esta columna muestra valores con mas de cuatro decimales; y el dataset de 2023 con tres decimales. Por lo que es necesario hacer la transformacion de los datos, redondeando a dos decimales en los dos datasets.
+```{r}
+data_2022$`Peso vivo promedio (peso de cada cabeza)`<- round(data_2022$`Peso vivo promedio (peso de cada cabeza)`, 2)
+data_2023$`Peso vivo promedio (Peso de cada cabeza)`<- round(data_2023$`Peso vivo promedio (Peso de cada cabeza)`, 2)
+```
+##Unión de los datasets
+
+El siguiente paso es unir los dos datasets para tener un solo archivo con el cual trabajar. Ya que los dos contienen la misma información por columna. Antes de hacer la unión de los dos datasets es importante verificar que no hay datos nulos o vacíos.
+```{r}
+anyNA(data_2022)
+anyNA(data_2023)
+```
+#Al identificar los datos nulos, el siguiente paso es saber cuántos datos nulos hay en los datasets.
+```{r}
+sum(is.na(data_2022))
+sum(is.na(data_2023))
+```
+#Se identificó que los valores nulos corresponden a la columna "Peso total en libras". Sin embargo, estos valores corresponden al dato del tipo de carne de exportación, que no contiene información en esta variable, por lo que únicamente se llenarán los vacíos con ceros.
+```{r}
+data_2022[is.na(data_2022)] <- 0
+data_2023[is.na(data_2023)] <- 0
+```
+#Una vez realizado esto, se procede a hacer la unión de los dos datasets. Para ello es necesario instalar el paquete dplyr.
+```{r}
+install.packages("dplyr")
+library(dplyr)
+```
+#Para no tener problemas con la unión, es necesario que las columnas tengan el mismo nombre en los encabezados. Por lo que a continuación se procede a modificarlos.
+```{r}
+View(data_2022)
+View(data_2023)
+
+colnames(data_2022)[colnames(data_2022) == "Número de cabezas"] <- "Número de Cabezas"
+colnames(data_2022)[colnames(data_2022) == "Peso vivo promedio (peso de cada cabeza)"] <- "Peso vivo promedio (Peso de cada cabeza)"
+colnames(data_2022)[colnames(data_2022) == "Carne y hueso"] <- "Carne y Hueso"
+```
+#A continuación se unen las tablas combinando las filas y se asigna la combinación a una nueva variable. Y se procede a verificar la unión.
+```{r}
+data_ganado <- bind_rows(data_2022, data_2023)
+View(data_ganado)
+```
+###Aplicación de Minería de datos:
+En este apartado se presentarán las instrucciones para aplicar los algoritmos requeridos en el proyecto.
+##Reglas de asociación Apriori
+Empezaremos con la reglas de asociación Apriori.Se aplicará la reglas de asociación apriori solo aquellas columnas con datos categóricos o nominales. Por lo que se creará un set de datos a partir del transformado.
+```{r}
+nuevo_data_ganado <- data_ganado[, c('Año','Tipo de Carne', 'Mes', 'Departamento', 'Municipio', 'Clase', 'Sexo (subclase)')]
+```
+#Verificar el nuevo set de datos creado solo con las columnas con variables categoricas o discretas
+```{r}
+View(nuevo_data_ganado)
+```
+#En el set de datos se identificaron variables en la columna "Municipio" con valores decimales, por lo que tanto en el dataset fuente como en el de "nuevo_data_ganado" se reduciran a numeros enteros.Y se verificará el set generado.
+```{r}
+data_ganado$Municipio <- round(data_ganado$Municipio)
+nuevo_data_ganado$Municipio <- round(nuevo_data_ganado$Municipio)
+
+View(nuevo_data_ganado)
+```
+#A continuacion, se aplican las reglas de asociacion al set creado. Y se inspeccionan las reglas generadas.
+```{r}
+reglas_apriori <- apriori(nuevo_data_ganado, parameter = list(support=0.2, confidence=0.5))
+inspect(reglas_apriori[0:100])
+```
+#Al aplicar las reglas, salen advertencias de que no hay valores lógicos de factor. Por lo que se explora la estructura de dataset creado.
+```{r}
+str(nuevo_data_ganado)
+```
+#Se identifica que las categorías están identificadas como números y no como factores. Por lo que se procede a transformar los datos a factores. Y verificamos el dataset de nuevo.
+```{r}
+nuevo_data_ganado[,1:7] <- lapply(nuevo_data_ganado[,1:7], as.factor)
+
+View(nuevo_data_ganado)
+```
+#Con la base generada, se aplica ahora el algoritmo apriori nuevamente. Con un soporte de 0.2 y una confianza de 0.5
+```{r}
+reglas_apriori <- apriori(nuevo_data_ganado, parameter = list(support=0.2, confidence=0.5))
+```
+#Se identificaron 22 reglas, por lo que se inspeccionan. Y con ello se pueden sacar conclusiones.
+```{r}
+inspect(reglas_apriori[0:22])
+```
+
+##Reglas de asociación FP-Growth
+A continuación se trabajará con las reglas de asociación Fp-growth. Para ello es necesario instalar Rtools. El primeri paso es verificar la versión de Rstudio que posee para instalar la versión correcta. Con ello puede proseguir a descargar Rtools en el siguiente enlace https://cran.r-project.org/bin/windows/Rtools/
+
+Una vez se ha instalado la versión de Rtools, verificar que esté insatalado en ruta de Rstudio
+```{r}
+system("where make")
+```
+Una vez instalado, aplicaremos el algortimo fp-growth al set de datos con variables discretas generado en la anterrior actividad.
+```{r}
+reglas_fp_growth <- fim4r(nuevo_data_ganado, method = "fpgrowth", target = "rules", supp = 0.2, conf = 0.5)
+```
+#Para visualizar las reglas como un frame, se aplica el siguiente código
+```{r}
+reglasframe <- as(reglas_fp_growth, "data.frame")
+View(reglasframe)
+```
+#Se cambió el soporte a 0.1 para verificar si aparecen otro tipo de asociaciones que señales ubicación o tiempo (mes)
+```{r}
+reglas_fp_growth <- fim4r(nuevo_data_ganado, method = "fpgrowth", target = "rules", supp = 0.1, conf = 0.5)
+
+```
+#Para visualizar las reglas como un frame, se aplica nuevamente el código anterior.
+```{r}
+reglasframe <- as(reglas_fp_growth, "data.frame")
+View(reglasframe)
+```
+##Análisis de cluster
+
+A continuación realizaremos el análisis de cluster a partir de K-means, utilizando el paquete de ggplot2 para graficar el resultado.
+
+#Para este análisis se utilizará el set de datos que contienen tanto valores discretos como continuos. Por lo que es importante verificar que estamos trabajando con el set correcto.
+```{r}
+View(data_ganado)
+```
+#Para el ejercicio, se desea realizar una comparación entre los dos años del dataset. Por lo que a partir de lal set de data_ganado se crearán dos subset.Una vez generado, se verifican los subsets.
+```{r}
+data_ganado_2022 <- subset(data_ganado, Año==2022)
+data_ganado_2023 <- subset(data_ganado, Año==2023)
+
+View(data_ganado_2022)
+View(data_ganado_2023)
+```
+#A continuación se generará los clusters de cada subset. Indicando que se creará con 4 centros.
+```{r}
+cluster_data_ganado_2022 <- kmeans(data_ganado_2022, centers=4)
+cluster_data_ganado_2023 <- kmeans(data_ganado_2023, centers=4)
+```
+#Para visualizar los clusters es necesarios instalar el paquete de ggplot2 (su librería también) y generar los gráficos.
+```{r}
+install.packages("ggplot2")
+library(ggplot2)
+```
+#A continuación se realizan los gráficos de los cluster tomando en cuenta las variables de "Municipio" y "Peso total en libras". Se realizarán los mismos gráficos para cada subset (2022 y 2023).
+
+##Datos 2022
+
+# Vamos agregar la columna de cluster al data.frame original
+```{r}
+data_ganado_2022$cluster <- as.factor(cluster_data_ganado_2022$cluster)
+```
+#Con ello generaremos los siguientes gráficos.
+
+# Crear el gráfico Departamento vs Producción de cuero
+```{r}
+ggplot(data_ganado_2022, aes(x = Cuero, y = Departamento, color = cluster)) +
+geom_point() +
+geom_point(data = as.data.frame(cluster_data_ganado_2022$centers), aes(x = Cuero, y = Departamento), color = "black", size = 4, shape = 17) +
+labs(title = "2022: Departamento vs Producción de cuero") +
+theme_minimal()+
+theme(plot.title = element_text(size = 12, hjust = 0.5))+
+scale_y_continuous(breaks = seq(1, 22, by = 1),limits = c(1, 22))
+```
+#Crear el gráfico Sexo(subclase) vs Peso total en libras
+```{r}
+ggplot(data_ganado_2022, aes(x = `Sexo (subclase)`, y = `Peso total en libras`, color = cluster)) + 
+geom_point() + 
+geom_point(data = as.data.frame(cluster_data_ganado_2022$centers), aes(x = `Sexo (subclase)`, y = `Peso total en libras`), color = "black", size = 4, shape = 17) + 
+labs(title = "2022: Sexo (subclase) vs Peso total en libras") + 
+theme_minimal() + 
+theme(plot.title = element_text(size = 12, hjust = 0.5))+
+scale_x_continuous(breaks = seq(1, 10, by = 1),limits = c(1, 10))+
+scale_y_continuous(breaks = seq(0, 3500000, by = 500000),limits = c(0, 3500000))
+```
+# Crear el gráfico Departamento vs Carne y Hueso
+```{r}
+ggplot(data_ganado_2022, aes(x =`Carne y Hueso`, y = Departamento, color = cluster)) +
+geom_point() +
+geom_point(data = as.data.frame(cluster_data_ganado_2022$centers), aes(x = `Carne y Hueso`, y = Departamento), color = "black", size = 4, shape = 17) +
+labs(title = "2022: Departamento vs Carne y Hueso") +
+theme_minimal()+
+theme(plot.title = element_text(size = 12, hjust = 0.5))+
+scale_y_continuous(breaks = seq(1, 22, by = 1),limits = c(1, 22))
+```
+# Crear el gráfico Departamento vs Desperdicio
+```{r}
+ggplot(data_ganado_2022, aes(x =Desperdicio, y = Departamento, color = cluster)) +
+geom_point() +
+geom_point(data = as.data.frame(cluster_data_ganado_2022$centers), aes(x = Desperdicio, y = Departamento), color = "black", size = 4, shape = 17) +
+labs(title = "2022: Departamento vs Desperdicio") +
+theme_minimal()+
+theme(plot.title = element_text(size = 12, hjust = 0.5))+
+scale_y_continuous(breaks = seq(1, 22, by = 1),limits = c(1, 22))
+```
+
+##Datos 2023
+
+# Vamos agregar la columna de cluster al data.frame original
+```{r}
+data_ganado_2023$cluster <- as.factor(cluster_data_ganado_2023$cluster)
+```
+# Crear el gráfico Departamento vs Producción de cuero
+```{r}
+ggplot(data_ganado_2023, aes(x = Cuero, y = Departamento, color = cluster)) +
+geom_point() +
+geom_point(data = as.data.frame(cluster_data_ganado_2023$centers), aes(x = Cuero, y = Departamento), color = "black", size = 4, shape = 17) +
+labs(title = "2023: Departamento vs Producción de cuero") +
+theme_minimal()+
+theme(plot.title = element_text(size = 12, hjust = 0.5))+
+scale_y_continuous(breaks = seq(1, 22, by = 1),limits = c(1, 22))
+```
+#Crear el gráfico Sexo(subclase) vs Peso total en libras
+```{r}
+ggplot(data_ganado_2023, aes(x = `Sexo (subclase)`, y = `Peso total en libras`, color = cluster)) + 
+geom_point() + 
+geom_point(data = as.data.frame(cluster_data_ganado_2023$centers), aes(x = `Sexo (subclase)`, y = `Peso total en libras`), color = "black", size = 4, shape = 17) + 
+labs(title = "2023: Sexo (subclase) vs Peso total en libras") + 
+theme_minimal() + 
+theme(plot.title = element_text(size = 12, hjust = 0.5))+
+scale_x_continuous(breaks = seq(1, 10, by = 1),limits = c(1, 10))+
+scale_y_continuous(breaks = seq(0, 3500000, by = 500000),limits = c(0, 3500000))
+```
+# Crear el gráfico Departamento vs Carne y Hueso
+```{r}
+ggplot(data_ganado_2023, aes(x =`Carne y Hueso`, y = Departamento, color = cluster)) +
+geom_point() +
+geom_point(data = as.data.frame(cluster_data_ganado_2023$centers), aes(x = `Carne y Hueso`, y = Departamento), color = "black", size = 4, shape = 17) +
+labs(title = "2023: Departamento vs Carne y Hueso") +
+theme_minimal()+
+theme(plot.title = element_text(size = 12, hjust = 0.5))+
+scale_y_continuous(breaks = seq(1, 22, by = 1),limits = c(1, 22))
+```
+# Crear el gráfico Departamento vs Desperdicio
+```{r}
+ggplot(data_ganado_2023, aes(x =Desperdicio, y = Departamento, color = cluster)) +
+geom_point() +
+geom_point(data = as.data.frame(cluster_data_ganado_2023$centers), aes(x = Desperdicio, y = Departamento), color = "black", size = 4, shape = 17) +
+labs(title = "2023: Departamento vs Desperdicio") +
+theme_minimal()+
+theme(plot.title = element_text(size = 12, hjust = 0.5))+
+scale_y_continuous(breaks = seq(1, 22, by = 1),limits = c(1, 22))
+```
+# Crear el gráfico Clase vs Desperdicio
+```{r}
+ggplot(data_ganado_2023, aes(x =Desperdicio, y = Clase, color = cluster)) +
+geom_point() +
+geom_point(data = as.data.frame(cluster_data_ganado_2023$centers), aes(x = Desperdicio, y = Clase), color = "black", size = 4, shape = 17) +
+labs(title = "2023: Departamento vs Desperdicio") +
+theme_minimal()+
+theme(plot.title = element_text(size = 12, hjust = 0.5))
+```
