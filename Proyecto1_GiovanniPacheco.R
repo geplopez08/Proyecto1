@@ -182,18 +182,54 @@ theme(plot.title = element_text(size = 12, hjust = 0.5))+
 scale_x_continuous(breaks = seq(1, 10, by = 1),limits = c(1, 10))+
 scale_y_continuous(breaks = seq(0, 3500000, by = 500000),limits = c(0, 3500000))
 
+# Crear el gráfico Departamento vs Carne y Hueso
+ggplot(data_ganado_2022, aes(x =`Carne y Hueso`, y = Departamento, color = cluster)) +
+geom_point() +
+geom_point(data = as.data.frame(cluster_data_ganado_2022$centers), aes(x = `Carne y Hueso`, y = Departamento), color = "black", size = 4, shape = 17) +
+labs(title = "2022: Departamento vs Carne y Hueso") +
+theme_minimal()+
+theme(plot.title = element_text(size = 12, hjust = 0.5))+
+scale_y_continuous(breaks = seq(1, 22, by = 1),limits = c(1, 22))
+
+# Crear el gráfico Departamento vs Desperdicio
+ggplot(data_ganado_2022, aes(x =Desperdicio, y = Departamento, color = cluster)) +
+geom_point() +
+geom_point(data = as.data.frame(cluster_data_ganado_2022$centers), aes(x = Desperdicio, y = Departamento), color = "black", size = 4, shape = 17) +
+labs(title = "2022: Departamento vs Desperdicio") +
+theme_minimal()+
+theme(plot.title = element_text(size = 12, hjust = 0.5))+
+scale_y_continuous(breaks = seq(1, 22, by = 1),limits = c(1, 22))
+
+
 #Datos 2023
 # Agregar la columna de clúster al data.frame original
 data_ganado_2023$cluster <- as.factor(cluster_data_ganado_2023$cluster)
 
 # Crear el gráfico Departamento vs Producción de cuero
 ggplot(data_ganado_2023, aes(x = Cuero, y = Departamento, color = cluster)) +
-  geom_point() +
-  geom_point(data = as.data.frame(cluster_data_ganado_2023$centers), aes(x = Cuero, y = Departamento), color = "black", size = 4, shape = 17) +
-  labs(title = "2023: Departamento vs Producción de cuero") +
-  theme_minimal()+
-  theme(plot.title = element_text(size = 12, hjust = 0.5))+
-  scale_y_continuous(breaks = seq(1, 22, by = 1),limits = c(1, 22))
+geom_point() +
+geom_point(data = as.data.frame(cluster_data_ganado_2023$centers), aes(x = Cuero, y = Departamento), color = "black", size = 4, shape = 17) +
+labs(title = "2023: Departamento vs Producción de cuero") +
+theme_minimal()+
+theme(plot.title = element_text(size = 12, hjust = 0.5))+
+scale_y_continuous(breaks = seq(1, 22, by = 1),limits = c(1, 22))
+
+# Crear el gráfico Departamento vs Desperdicio
+ggplot(data_ganado_2023, aes(x =Desperdicio, y = Departamento, color = cluster)) +
+geom_point() +
+geom_point(data = as.data.frame(cluster_data_ganado_2023$centers), aes(x = Desperdicio, y = Departamento), color = "black", size = 4, shape = 17) +
+labs(title = "2023: Departamento vs Desperdicio") +
+theme_minimal()+
+theme(plot.title = element_text(size = 12, hjust = 0.5))+
+scale_y_continuous(breaks = seq(1, 22, by = 1),limits = c(1, 22))
+
+# Crear el gráfico Clase vs Desperdicio
+ggplot(data_ganado_2023, aes(x =Desperdicio, y = Clase, color = cluster)) +
+geom_point() +
+geom_point(data = as.data.frame(cluster_data_ganado_2023$centers), aes(x = Desperdicio, y = Clase), color = "black", size = 4, shape = 17) +
+labs(title = "2023: Departamento vs Desperdicio") +
+theme_minimal()+
+theme(plot.title = element_text(size = 12, hjust = 0.5))
 
 #Crear el gráfico Sexo(subclase) vs Peso total en libras
 ggplot(data_ganado_2023, aes(x = `Sexo (subclase)`, y = `Peso total en libras`, color = cluster)) + 
@@ -204,7 +240,3 @@ theme_minimal() +
 theme(plot.title = element_text(size = 12, hjust = 0.5))+
 scale_x_continuous(breaks = seq(1, 10, by = 1),limits = c(1, 10))+
 scale_y_continuous(breaks = seq(0, 3500000, by = 500000),limits = c(0, 3500000))
-
-#Crear el gráfico Número de Cabezas vs Clase
-
-
